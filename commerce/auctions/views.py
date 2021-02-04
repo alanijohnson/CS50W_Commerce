@@ -1,11 +1,11 @@
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import reverse
 from .forms import UserProfileForm, CreateListingForm
 
-from .models import User
+from .models import User, Listing
 
 
 def index(request):
@@ -81,9 +81,34 @@ def register(request):
 
 def create_listing(request):
     if request.method == "POST":
-        pass
+        form = CreateListingForm(request.POST)
+               
+        if form.is_valid():
+            # get the user
+            title = form.cleaned_data["title"]
+            description = form.cleaned_data["description"]
+            user = request.user
+            listing = Listing(author=user, title=title, description=description)
+            listing.save()
+            
+            return redirect('listing', listing.id)
+        
+        else:
+            return render(request,"auctions/create_listing.html",{
+                'form': form
+            })
     else:
         return render(request,"auctions/create_listing.html",{
             'form': CreateListingForm()
         })
 
+def listing(request, id):
+    listing = Listing.objects.get(id=id)
+    print(f"{listing.author}")
+    print(f"{listing.author.profile.first_name}")
+    return render(request,"auctions/listing.html", {
+        "listing":listing,
+        "title": listing.title,
+        "author": listing.author,
+        "user": request.user
+    })

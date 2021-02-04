@@ -30,11 +30,13 @@ class UserProfileForm(forms.ModelForm):
         }
 
 class CreateListingForm(forms.ModelForm):
-    model = Listing
-    fields = ('title','description')
-    widgets = {
-        'title':forms.TextInput(attrs={
-            'class':'form-control'}),
-        'description':forms.Textarea(attrs={
-            'class':'form-control'})
-    }
+    
+    class Meta:
+        model = Listing
+        fields = ('title','description')
+        widgets = {
+            'title':forms.TextInput(attrs={
+                'class':'form-control'}),
+            'description':forms.Textarea(attrs={
+                'class':'form-control'})
+        }

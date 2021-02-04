@@ -1,0 +1,24 @@
+{% extends "auctions/layout.html" %}
+
+{% block title %}
+    {{title}}
+{% endblock %}
+
+{% block body %}
+    <h1> {{title}} </h1>
+    <b>Author:</b> {{listing.author.profile.first_name}} {{listing.author.profile.last_name}}
+    <div></div>
+    <h5 style="margin-top: 40px">Description</h5>
+    <p>
+        {{listing.description}}
+    </p>
+    {% if user.is_authenticated %}
+        {% if user == author %}
+            Close Listing
+        {% else %}
+            Bid
+        {% endif %}
+    {% else %}
+        Log in to Bid
+    {% endif %}
+{% endblock %}

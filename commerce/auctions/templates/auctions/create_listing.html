@@ -5,5 +5,10 @@
 {% endblock %}
 
 {% block body %}
-    Create a listing
+    <h1> Create a listing </h1>
+    <form action= {% url 'create_listing' %} method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input class="btn btn-primary" type="submit" value="Create Listing">
+    </form>
 {% endblock %}

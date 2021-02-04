@@ -17,11 +17,11 @@ class User(AbstractUser):
     objects = UserManager()
     
     def __str__(self):
-        return f"{self.username}: {self.UserProfiles.get().first_name} {self.UserProfiles.get().last_name}"
+        return f"{self.username}: {self.profile.first_name} {self.profile.last_name}"
 
 class UserProfile(models.Model):
     # user
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=False, primary_key=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=False, primary_key=True, related_name='profile')
     # first name
     first_name = models.CharField('first name', unique=False, max_length = 64, null=False)
     # last name
@@ -50,12 +50,13 @@ class Listing(models.Model):
     #is_open - status
     is_open = models.BooleanField('Open',default=True, null=False)
     #closed date - date closed
+    #date_closed = models.DateTimeField('Date Closed', default=None, null=True)
     #date_closed = models.DateTimeField('Date Posted', default=None, null=False)
     #min bid - Float value 2 decimals (max bid is 1 million $)
-    #min_bin = models.DecimalField('Minimum Bid', max_digits=9, decimal_places=2, default=0)
+    #min_bid = models.DecimalField('Minimum Bid', default=0.00, max_digits=9, decimal_places=2)
     #category - 1 listing 1 category
     #tags - 1 listing; many tags
-    # default duration
+   
     pass
 
 class Bid():
