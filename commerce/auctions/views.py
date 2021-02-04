@@ -1,9 +1,13 @@
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils.http import is_safe_url
 from .forms import UserProfileForm, CreateListingForm
+
+
 
 from .models import User, Listing
 
@@ -13,8 +17,19 @@ def index(request):
 
 
 def login_view(request):
+    print(f"{request.path}")
+    next_url = request.GET.get('next')
+    print(f"{next_url}")
+    if not valid_next_url(next_url, request.get_host()):
+        next_url = "/"
+    
     if request.method == "POST":
-
+        next_url = request.POST.get("next")
+        print(f"{next_url}")
+        if not valid_next_url(next_url, request.get_host()):
+            next_url = "/"
+            
+        
         # Attempt to sign user in
         username = request.POST["username"]
         password = request.POST["password"]
@@ -23,14 +38,25 @@ def login_view(request):
         # Check if authentication successful
         if user is not None:
             login(request, user)
-            return HttpResponseRedirect(reverse("index"))
+            return redirect(next_url)
         else:
             return render(request, "auctions/login.html", {
                 "message": "Invalid username and/or password."
             })
     else:
-        return render(request, "auctions/login.html")
+        return render(request, "auctions/login.html", {
+            "next_url":next_url
+                      })
 
+# method to validate the login redirect URL
+def valid_next_url(next, allowed_hosts):
+    # next may be None because the page may have been reached directly
+    if next is None:
+        return False
+    # return whether or not the url is safe to access
+    return is_safe_url(
+        url=next, allowed_hosts=allowed_hosts
+    )
 
 def logout_view(request):
     logout(request)
@@ -78,7 +104,8 @@ def register(request):
         return render(request, "auctions/register.html",{
             "profile_form": profile_form
         })
-
+        
+@login_required(login_url='login')
 def create_listing(request):
     if request.method == "POST":
         form = CreateListingForm(request.POST)
@@ -87,8 +114,9 @@ def create_listing(request):
             # get the user
             title = form.cleaned_data["title"]
             description = form.cleaned_data["description"]
+            min_bid = form.cleaned_data["min_bid"]
             user = request.user
-            listing = Listing(author=user, title=title, description=description)
+            listing = Listing(author=user, title=title, description=description, min_bid=min_bid)
             listing.save()
             
             return redirect('listing', listing.id)
@@ -101,6 +129,7 @@ def create_listing(request):
         return render(request,"auctions/create_listing.html",{
             'form': CreateListingForm()
         })
+        
 
 def listing(request, id):
     listing = Listing.objects.get(id=id)
@@ -110,5 +139,6 @@ def listing(request, id):
         "listing":listing,
         "title": listing.title,
         "author": listing.author,
-        "user": request.user
+        "user": request.user,
+        "min_bid": listing.min_bid
     })

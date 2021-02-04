@@ -1,4 +1,6 @@
+from decimal import *
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator
 from django.utils import timezone
 from django.db import models
 from .managers import UserManager
@@ -50,23 +52,24 @@ class Listing(models.Model):
     #is_open - status
     is_open = models.BooleanField('Open',default=True, null=False)
     #closed date - date closed
-    #date_closed = models.DateTimeField('Date Closed', default=None, null=True)
+    date_closed = models.DateTimeField('Date Closed', default=None, null=True)
     #date_closed = models.DateTimeField('Date Posted', default=None, null=False)
     #min bid - Float value 2 decimals (max bid is 1 million $)
-    #min_bid = models.DecimalField('Minimum Bid', default=0.00, max_digits=9, decimal_places=2)
+    min_bid = models.DecimalField('Minimum Bid', default=0.00, max_digits=9, decimal_places=2,validators=[MinValueValidator(Decimal('0.00'))])
     #category - 1 listing 1 category
     #tags - 1 listing; many tags
    
     pass
 
-class Bid():
+class Bid(models.Model):
     #Listing - Many bids, Many listing
+    listing = models.ManyToManyField(Listing, related_name='bids')
     #bidder - 1 bidder per bid
+    bidder = models.ForeignKey(User, on_delete=models.CASCADE,related_name='bids')
     #amount - Float 2 decimals
-    #amount = models.DecimalField('Bid Amount', max_digits=9, decimal_places=2)
+    amount = models.DecimalField('Bid Amount', max_digits=9, decimal_places=2,validators=[MinValueValidator(Decimal('0.00'))])
     #date bid - DateTime
-    #date_bid = models.DateTimeField('Date Bid', default=timezone.now(), null=False)
-    pass
+    date_bid = models.DateTimeField('Date Bid', default=timezone.now(), null=False)
     
 class Comment():
     #Listing - listing where comments are posted; 1 Listing; Many Comments

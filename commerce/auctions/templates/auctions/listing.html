@@ -13,12 +13,17 @@
         {{listing.description}}
     </p>
     {% if user.is_authenticated %}
+        <form action={% url 'listing' id=listing.id %} method="post">
         {% if user == author %}
-            Close Listing
+            <input class="btn btn-primary" type="submit" value="Close Listing">
         {% else %}
-            Bid
+            <input class="btn btn-primary" type="submit" value="Close Listing">
         {% endif %}
     {% else %}
         Log in to Bid
     {% endif %}
+    
+    
+    </form>
+    {{min_bid}}
 {% endblock %}

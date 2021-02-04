@@ -10,6 +10,9 @@
 
     <form action="{% url 'login' %}" method="post">
         {% csrf_token %}
+        {% if next_url %}
+            <input type="hidden" name="next" value="{{ next_url }}" />
+        {% endif %}
         <div class="form-group">
             <input autofocus class="form-control" type="text" name="username" placeholder="Username">
         </div>
