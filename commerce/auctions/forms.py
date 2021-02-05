@@ -44,11 +44,31 @@ class CreateListingForm(forms.ModelForm):
         }
 
 class CreateBidForm(forms.ModelForm):
-    
+    listing = forms.ModelChoiceField(label="", queryset=Listing.objects.all(), widget=forms.HiddenInput)
     class Meta:
         model = Bid
-        fields = ['amount',]
+        fields = ['amount','bidder','listing',]
         widgets = {
             'amount':forms.NumberInput(attrs={
-                'class':'form-control'})
+                'class':'form-control'}),
+            'bidder':forms.HiddenInput(),
+            'listing':forms.HiddenInput()
+            
         }
+        
+    # clean method ensures the bid amount is greater than the highest bid or min_bid of listing
+    def clean(self):
+        cleaned_data = super(CreateBidForm,self).clean()
+        print(f"{cleaned_data}")
+        amount = cleaned_data.get("amount")
+        listing = cleaned_data.get("listing")
+        bids = listing.bids.all()
+        if len(bids) != 0:
+            highest_bid = bids.aggregate(Max('amount'))
+            if highest_bid <= amount:
+                raise ValidationError(f"Must bid higher than the highest bid which is ${highest_amount}.")
+        else:
+            if listing.min_bid < amount:
+                raise ValidationError(f"Must bid higher than the listing's minimum bid, ${self.listing.min_bid}.")
+        
+        return cleaned_data

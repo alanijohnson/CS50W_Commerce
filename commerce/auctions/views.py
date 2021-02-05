@@ -5,10 +5,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils.http import is_safe_url
-from .forms import UserProfileForm, CreateListingForm
-
-
-
+from .forms import UserProfileForm, CreateListingForm, CreateBidForm
 from .models import User, Listing
 
 
@@ -133,12 +130,33 @@ def create_listing(request):
 
 def listing(request, id):
     listing = Listing.objects.get(id=id)
-    print(f"{listing.author}")
-    print(f"{listing.author.profile.first_name}")
+    # form posted from listing page
+    if request.method == "POST":
+        # multiple buttons on page. Determine which was clicked
+        button = request.POST.get("button")
+        if button == "Bid":
+            form = CreateBidForm(request.POST)
+            
+            
+            if form.is_valid():
+                amount = form.cleaned_data('amount')
+                return redirect('listing', id=id)
+        
+            else:
+                return render_listing(request,id,form)
+    print(f"{listing}")
+    return render_listing(request, id, CreateBidForm(initial={'listing':listing, 'bidder':request.user}))
+    
+
+def render_listing(request, id, form):
+    listing = Listing.objects.get(id=id)
+    bids = listing.bids.all()
+    last_bid = listing.highest_bid()
     return render(request,"auctions/listing.html", {
         "listing":listing,
         "title": listing.title,
         "author": listing.author,
         "user": request.user,
-        "min_bid": listing.min_bid
+        "last_bid": last_bid,
+        "bid_form": form
     })

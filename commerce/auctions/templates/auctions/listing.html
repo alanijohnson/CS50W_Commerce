@@ -5,25 +5,44 @@
 {% endblock %}
 
 {% block body %}
+<!-- Title and Author -->
     <h1> {{title}} </h1>
     <b>Author:</b> {{listing.author.profile.first_name}} {{listing.author.profile.last_name}}
     <div></div>
+<!-- Descriptions -->
     <h5 style="margin-top: 40px">Description</h5>
     <p>
         {{listing.description}}
     </p>
+<!-- Display Highest Bid & Bidder (on/off) -->
+    <p>
+    <h5> Highest Bid </h5>
+    <div>
+    {% if last_bid %}
+        {{last_bid.bidder.profile.first_name}} {{last_bid.bidder.profile.first_name}}: {{last_bid.amount}}
+    {% else %}
+        <div>Be the first to bid!</div>
+        <div>Minimum Amount: ${{listing.min_bid}}</div>
+    {% endif %}
+    </div>
+    </p>
+<!-- Action Button To Bid/Login/or Close Listing -->
     {% if user.is_authenticated %}
         <form action={% url 'listing' id=listing.id %} method="post">
-        {% if user == author %}
-            <input class="btn btn-primary" type="submit" value="Close Listing">
-        {% else %}
-            <input class="btn btn-primary" type="submit" value="Close Listing">
-        {% endif %}
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% if user == author %}
+                <input class="btn btn-primary" type="submit" value="Close Listing" name="button">
+            {% else %}
+                
+                {{ bid_form.as_p }}
+                <input class="btn btn-primary" type="submit" value="Bid" name="button">
+            {% endif %}
     {% else %}
         Log in to Bid
     {% endif %}
-    
-    
     </form>
-    {{min_bid}}
+<!-- Bid History -->
+<!-- Comments -->
+    
 {% endblock %}

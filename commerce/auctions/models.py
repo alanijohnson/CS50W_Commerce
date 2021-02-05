@@ -1,8 +1,10 @@
 from decimal import *
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.utils import timezone
 from django.db import models
+from django.db.models import Max
+from django.utils import timezone
 from .managers import UserManager
 
 # add can buy and can sell
@@ -58,10 +60,17 @@ class Listing(models.Model):
     min_bid = models.DecimalField('Minimum Bid', default=0.00, max_digits=9, decimal_places=2,validators=[MinValueValidator(Decimal('0.00'))])
     #category - 1 listing 1 category
     #tags - 1 listing; many tags
-   
-    pass
+    
+    def highest_bid(self):
+        bids = self.bids.all()
+        if len(bids) != 0:
+            amount = bids.aggregate(Max('amount'))
+            return bids.get(amount=amount)
+        else:
+            return None
 
 class Bid(models.Model):
+    
     #Listing - Many bids, Many listing
     listing = models.ManyToManyField(Listing, related_name='bids')
     #bidder - 1 bidder per bid
@@ -70,6 +79,7 @@ class Bid(models.Model):
     amount = models.DecimalField('Bid Amount', max_digits=9, decimal_places=2,validators=[MinValueValidator(Decimal('0.00'))])
     #date bid - DateTime
     date_bid = models.DateTimeField('Date Bid', default=timezone.now(), null=False)
+    
     
 class Comment():
     #Listing - listing where comments are posted; 1 Listing; Many Comments
@@ -90,7 +100,7 @@ class Category(models.Model):
 class Tag(models.Model):
     # tags for listing
     name = models.CharField('Tag Name', max_length=30, unique=True)
-    pass
+    
 
 # in order to be able to buy or sell you must have an average rating > 2.5. Anything below and the permissions change for the user. User will have to create a new profile
 class Ratings():

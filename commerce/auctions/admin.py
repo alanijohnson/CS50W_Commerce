@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Category, Tag, UserProfile, Listing
+from .models import User, Category, Tag, UserProfile, Listing, Bid
 from django.contrib.auth.admin import UserAdmin
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 # Register your models here.
@@ -25,3 +25,4 @@ admin.site.register(Category)
 admin.site.register(UserProfile)
 admin.site.register(Listing)
 admin.site.register(Tag)
+admin.site.register(Bid)
