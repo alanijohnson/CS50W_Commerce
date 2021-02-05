@@ -27,19 +27,32 @@
     </div>
     </p>
 <!-- Action Button To Bid/Login/or Close Listing -->
-    {% if user.is_authenticated %}
-        <form action={% url 'listing' id=listing.id %} method="post">
-            {% csrf_token %}
-            {{ form.non_field_errors }}
-            {% if user == author %}
-                <input class="btn btn-primary" type="submit" value="Close Listing" name="button">
-            {% else %}
-                
-                {{ bid_form.as_p }}
-                <input class="btn btn-primary" type="submit" value="Bid" name="button">
-            {% endif %}
+    {% if listing.is_open == True %}
+        {% if user.is_authenticated %}
+            <form action={% url 'listing' id=listing.id %} method="post">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+                {% if user == author %}
+                    <input class="btn btn-primary" type="submit" value="Close Listing" name="button">
+                {% else %}
+                    
+                    {{ bid_form.as_p }}
+                    <input class="btn btn-primary" type="submit" value="Bid" name="button">
+                {% endif %}
+        {% else %}
+            Log in to Bid
+        {% endif %}
     {% else %}
-        Log in to Bid
+        {% if last_bid is None %}
+            Listing Closed Before Bid was placed
+        {% else %}
+            {% if user.is_authenticated and user == last_bid.bidder %}
+                You won the auction for {{listing.title}} at ${{last_bid.amount}}
+            {% else %}
+                {{last_bid.bidder.profile.first_name}} {{last_bid.bidder.profile.last_name}} won the auction for {{listing.title}} at ${{last_bid.amount}}
+            {% endif %}
+            
+        {% endif %}
     {% endif %}
     </form>
 <!-- Bid History -->

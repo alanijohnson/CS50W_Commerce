@@ -148,17 +148,21 @@ def listing(request, id):
             else:
                 return render_listing(request,id,form)
         
-        elif button == "Close Bid":
-            pass
-                
-    print("get")
+        elif button == "Close Listing":
+            listing.is_open = False
+            listing.save()
+            print(f"Closed Listing: Listing {listing.is_open}")
+            return render_listing(request,id,None)
+              
     return render_listing(request, id, CreateBidForm(initial={'listing':listing, 'bidder':request.user}))
     
 
 def render_listing(request, id, form):
     listing = Listing.objects.get(id=id)
+    print(f"Listing {listing.is_open}")
     bids = listing.bids.all()
     highest_bid = listing.highest_bid()
+    print
     return render(request,"auctions/listing.html", {
         "listing":listing,
         "title": listing.title,
