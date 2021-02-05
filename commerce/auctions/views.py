@@ -136,15 +136,14 @@ def listing(request, id):
         button = request.POST.get("button")
         if button == "Bid":
             form = CreateBidForm(request.POST)
-            
-            
             if form.is_valid():
-                amount = form.cleaned_data('amount')
+                print("valid")
+                amount = form.cleaned_data.get('amount')
                 return redirect('listing', id=id)
-        
             else:
+                print("invalid")
                 return render_listing(request,id,form)
-    print(f"{listing}")
+    print("get")
     return render_listing(request, id, CreateBidForm(initial={'listing':listing, 'bidder':request.user}))
     
 

@@ -1,4 +1,5 @@
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from django.core.exceptions import ValidationError
 from django import forms
 from .models import User, UserProfile, Listing, Bid
 
@@ -59,16 +60,14 @@ class CreateBidForm(forms.ModelForm):
     # clean method ensures the bid amount is greater than the highest bid or min_bid of listing
     def clean(self):
         cleaned_data = super(CreateBidForm,self).clean()
-        print(f"{cleaned_data}")
         amount = cleaned_data.get("amount")
+        self.fields.get('amount').validate(amount)
         listing = cleaned_data.get("listing")
         bids = listing.bids.all()
         if len(bids) != 0:
             highest_bid = bids.aggregate(Max('amount'))
             if highest_bid <= amount:
-                raise ValidationError(f"Must bid higher than the highest bid which is ${highest_amount}.")
-        else:
-            if listing.min_bid < amount:
-                raise ValidationError(f"Must bid higher than the listing's minimum bid, ${self.listing.min_bid}.")
-        
-        return cleaned_data
+                raise ValidationError(f"Must bid higher than the highest bid which is ${highest_bid.amount}.")
+        elif listing.min_bid > amount:
+            raise ValidationError(f"Must bid higher than the listing's minimum bid, ${listing.min_bid}.")
+                
