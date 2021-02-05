@@ -63,11 +63,10 @@ class CreateBidForm(forms.ModelForm):
         amount = cleaned_data.get("amount")
         self.fields.get('amount').validate(amount)
         listing = cleaned_data.get("listing")
-        bids = listing.bids.all()
-        if len(bids) != 0:
-            highest_bid = bids.aggregate(Max('amount'))
-            if highest_bid <= amount:
+        highest_bid = listing.highest_bid()
+        if highest_bid is None:
+            if listing.min_bid > amount:
+                raise ValidationError(f"Must bid higher than the listing's minimum bid, ${listing.min_bid}.")
+        else:
+            if highest_bid.amount >= amount:
                 raise ValidationError(f"Must bid higher than the highest bid which is ${highest_bid.amount}.")
-        elif listing.min_bid > amount:
-            raise ValidationError(f"Must bid higher than the listing's minimum bid, ${listing.min_bid}.")
-                

@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils.http import is_safe_url
 from .forms import UserProfileForm, CreateListingForm, CreateBidForm
-from .models import User, Listing
+from .models import User, Listing, Bid
 
 
 def index(request):
@@ -56,8 +56,11 @@ def valid_next_url(next, allowed_hosts):
     )
 
 def logout_view(request):
+    next_url = request.GET.get('next')
+    if not valid_next_url(next_url, request.get_host()):
+        next_url = 'index'
     logout(request)
-    return HttpResponseRedirect(reverse("index"))
+    return redirect(next_url)
 
 
 def register(request):
@@ -137,12 +140,17 @@ def listing(request, id):
         if button == "Bid":
             form = CreateBidForm(request.POST)
             if form.is_valid():
-                print("valid")
                 amount = form.cleaned_data.get('amount')
+                bid = Bid(amount=amount, bidder=request.user)
+                bid.save()
+                listing.bids.add(bid)
                 return redirect('listing', id=id)
             else:
-                print("invalid")
                 return render_listing(request,id,form)
+        
+        elif button == "Close Bid":
+            pass
+                
     print("get")
     return render_listing(request, id, CreateBidForm(initial={'listing':listing, 'bidder':request.user}))
     
@@ -150,12 +158,13 @@ def listing(request, id):
 def render_listing(request, id, form):
     listing = Listing.objects.get(id=id)
     bids = listing.bids.all()
-    last_bid = listing.highest_bid()
+    highest_bid = listing.highest_bid()
     return render(request,"auctions/listing.html", {
         "listing":listing,
         "title": listing.title,
         "author": listing.author,
         "user": request.user,
-        "last_bid": last_bid,
-        "bid_form": form
+        "last_bid": highest_bid,
+        "bid_form": form,
+        "bids": bids
     })

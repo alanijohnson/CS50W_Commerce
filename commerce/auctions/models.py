@@ -40,7 +40,6 @@ class Listing(models.Model):
     # Eventually upgrade model to use https://github.com/django-money/django-money
     #author - 1 listing; 1 author
     author = models.ForeignKey(User, on_delete=models.CASCADE)
-    #winning bid - bid ID, null if no winner, 1 listing, 1 winning bid
     #image_url
     #title
     title = models.CharField('Listing Title', max_length=64, null=False, default="")
@@ -63,8 +62,7 @@ class Listing(models.Model):
     def highest_bid(self):
         bids = self.bids.all()
         if len(bids) != 0:
-            amount = bids.aggregate(Max('amount'))
-            return bids.get(amount=amount)
+            return bids.order_by('-amount')[0]
         else:
             return None
 

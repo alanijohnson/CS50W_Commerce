@@ -19,7 +19,7 @@
     <h5> Highest Bid </h5>
     <div>
     {% if last_bid %}
-        {{last_bid.bidder.profile.first_name}} {{last_bid.bidder.profile.first_name}}: {{last_bid.amount}}
+        {{last_bid.bidder.profile.first_name}} {{last_bid.bidder.profile.last_name}}: ${{last_bid.amount}}
     {% else %}
         <div>Be the first to bid!</div>
         <div>Minimum Amount: ${{listing.min_bid}}</div>
@@ -43,6 +43,14 @@
     {% endif %}
     </form>
 <!-- Bid History -->
+<p>
+    <h5 style="margin-top: 40px">Bid History</h5>
+    <ul>
+        {% for bid in bids reversed %}
+            <li>{{bid.bidder.profile.first_name}} {{bid.bidder.profile.first_name}} bid {{bid.amount}} on {{bid.date_bid}}</li>
+        {% endfor %}
+    </ul>
+</p>
 <!-- Comments -->
     
 {% endblock %}

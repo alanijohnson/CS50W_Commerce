@@ -21,6 +21,7 @@ Other things to do:
  [ ] Update profile
  [ ] Delete fields off of the user
  [ ] Case insensitive user authentication for username
+ [ ] Profile pages. When a user is on someone elses profile view their listings
 
 
 What did I learn:
