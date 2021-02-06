@@ -4,13 +4,18 @@ from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import is_safe_url
-from .forms import UserProfileForm, CreateListingForm, CreateBidForm
-from .models import User, Listing, Bid
+from .forms import UserProfileForm, CreateListingForm, CreateBidForm, CreateCommentForm
+from .models import User, Listing, Bid, Comment
 
 
 def index(request):
-    return render(request, "auctions/index.html")
+    active_listings = Listing.objects.filter(is_open=True).order_by('-date_posted')
+    active_listings_dict = {listing: (len(listing.bids.all()),listing.highest_bid()) for listing in active_listings}
+    return render(request, "auctions/index.html",{
+        "active_listings": active_listings_dict
+    })
 
 
 def login_view(request):
@@ -115,8 +120,9 @@ def create_listing(request):
             title = form.cleaned_data["title"]
             description = form.cleaned_data["description"]
             min_bid = form.cleaned_data["min_bid"]
+            category = form.cleaned_data["category"]
             user = request.user
-            listing = Listing(author=user, title=title, description=description, min_bid=min_bid)
+            listing = Listing(author=user, title=title, description=description, min_bid=min_bid, category=category)
             listing.save()
             
             return redirect('listing', listing.id)
@@ -137,38 +143,93 @@ def listing(request, id):
     if request.method == "POST":
         # multiple buttons on page. Determine which was clicked
         button = request.POST.get("button")
+        bid_form = CreateBidForm(request.POST)
+        comment_form = CreateCommentForm(request.POST)
         if button == "Bid":
-            form = CreateBidForm(request.POST)
-            if form.is_valid():
-                amount = form.cleaned_data.get('amount')
+            if bid_form.is_valid():
+                amount = bid_form.cleaned_data.get('amount')
                 bid = Bid(amount=amount, bidder=request.user)
                 bid.save()
                 listing.bids.add(bid)
                 return redirect('listing', id=id)
-            else:
-                return render_listing(request,id,form)
-        
+                
         elif button == "Close Listing":
             listing.is_open = False
+            listing.date_closed = timezone.now()
             listing.save()
             print(f"Closed Listing: Listing {listing.is_open}")
-            return render_listing(request,id,None)
-              
-    return render_listing(request, id, CreateBidForm(initial={'listing':listing, 'bidder':request.user}))
+            return render_listing(request,id,None, None)
+            
+        elif button == "Submit Comment":
+            if comment_form.is_valid():
+                content = comment_form.cleaned_data.get('content')
+                comment = Comment(content=content, author=request.user, listing=listing)
+                comment.save()
+                return redirect('listing',id=id)
+                
+        elif button == "Add to Watchlist":
+            request.user.profile.watchlist.add(listing)
+            #request.user.profile.save()
+            return redirect('listing', id=id)
+            
+        elif button == "Remove from Watchlist":
+            print("Remove Listing")
+            request.user.profile.watchlist.remove(listing)
+            request.user.profile.save()
+            return redirect('listing', id=id)
+                
+        # return if button was clicked but no forms were valid
+        return render_listing(request, id, bid_form, comment_form)
+    
+    comment_form = None
+    if listing.is_open == True:
+        comment_form = CreateCommentForm(initial={'listing':listing, 'author':request.user})
+    return render_listing(request, id, CreateBidForm(initial={'listing':listing, 'bidder':request.user}), comment_form)
+    
     
 
-def render_listing(request, id, form):
+def render_listing(request, id, bid_form, comment_form):
     listing = Listing.objects.get(id=id)
-    print(f"Listing {listing.is_open}")
     bids = listing.bids.all()
     highest_bid = listing.highest_bid()
-    print
+    user_watchlist = None
+    if request.user.is_authenticated:
+            user_watchlist = request.user.profile.watchlist.all()
+            
     return render(request,"auctions/listing.html", {
         "listing":listing,
         "title": listing.title,
         "author": listing.author,
         "user": request.user,
         "last_bid": highest_bid,
-        "bid_form": form,
-        "bids": bids
+        "bid_form": bid_form,
+        "bids": bids,
+        "comment_form": comment_form,
+        "comments":listing.get_comments(),
+        "user_watchlist":user_watchlist
+    })
+
+def profile(request, username):
+    try:
+        user = User.objects.get(username=username)
+    except:
+        return redirect('index')
+        
+    watchlist = user.profile.watchlist.all()
+    watchlist_dict = {listing: (len(listing.bids.all()), listing.highest_bid()) for listing in watchlist}
+    active_listings = Listing.objects.filter(author=user.id, is_open=True).order_by('-date_posted')
+    active_listings_dict = {listing: (len(listing.bids.all()),listing.highest_bid) for listing in active_listings}
+    closed_listings = Listing.objects.filter(author=user.id, is_open=False).order_by('-date_posted')
+    closed_listings_dict = {listing: listing.highest_bid() for listing in closed_listings}
+    
+    print(f"{watchlist_dict}")
+    print(f"{listing in watchlist}")
+    
+    
+    return render(request, "auctions/profile.html",{
+        "current_user": request.user,
+        "profile_user": user,
+        "active_listings": active_listings_dict,
+        "closed_listings": closed_listings_dict,
+        "watchlist": watchlist_dict
     })

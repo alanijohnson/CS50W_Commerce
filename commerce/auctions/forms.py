@@ -1,7 +1,7 @@
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
 from django import forms
-from .models import User, UserProfile, Listing, Bid
+from .models import User, UserProfile, Listing, Bid, Comment
 
 class CustomUserCreationForm(UserCreationForm):
 
@@ -34,15 +34,17 @@ class CreateListingForm(forms.ModelForm):
     
     class Meta:
         model = Listing
-        fields = ('title','min_bid','description')
+        fields = ('title','category','min_bid','description')
         widgets = {
             'title':forms.TextInput(attrs={
                 'class':'form-control'}),
             'description':forms.Textarea(attrs={
                 'class':'form-control'}),
             'min_bid':forms.NumberInput(attrs={
+                'class':'form-control'}),
+            'category':forms.Select(attrs={
                 'class':'form-control'})
-        }
+            }
 
 class CreateBidForm(forms.ModelForm):
     listing = forms.ModelChoiceField(label="", queryset=Listing.objects.all(), widget=forms.HiddenInput)
@@ -70,3 +72,14 @@ class CreateBidForm(forms.ModelForm):
         else:
             if highest_bid.amount >= amount:
                 raise ValidationError(f"Must bid higher than the highest bid which is ${highest_bid.amount}.")
+
+class CreateCommentForm(forms.ModelForm):
+   
+    class Meta:
+        model = Comment
+        fields = ('content',) # 'author',listing',)
+        widgets = {'content':forms.Textarea(attrs={
+                'class':'form-control','rows':3}),
+                }
+        # 'listing':forms.HiddenInput(),
+        #        'author':forms.HiddenInput()

@@ -18,52 +18,88 @@
     <p>
     <h5> Highest Bid </h5>
     <div>
-    {% if last_bid %}
+    {% if last_bid and listing.is_open %}
         {{last_bid.bidder.profile.first_name}} {{last_bid.bidder.profile.last_name}}: ${{last_bid.amount}}
-    {% else %}
+    {% elif listing.is_open %}
         <div>Be the first to bid!</div>
         <div>Minimum Amount: ${{listing.min_bid}}</div>
     {% endif %}
     </div>
     </p>
-<!-- Action Button To Bid/Login/or Close Listing -->
+<!-- Action Button To Bid/Login/Close Listing -->
     {% if listing.is_open == True %}
         {% if user.is_authenticated %}
             <form action={% url 'listing' id=listing.id %} method="post">
                 {% csrf_token %}
                 {{ form.non_field_errors }}
                 {% if user == author %}
-                    <input class="btn btn-primary" type="submit" value="Close Listing" name="button">
+                    <input class="btn btn-danger" type="submit" value="Close Listing" name="button">
                 {% else %}
-                    
                     {{ bid_form.as_p }}
-                    <input class="btn btn-primary" type="submit" value="Bid" name="button">
+                    <input class="btn btn-danger" type="submit" value="Bid" name="button">
                 {% endif %}
+            </form>
         {% else %}
-            Log in to Bid
+        <!-- User is not logged in. -->
+            <a class="nav-link" href="/login?next={{request.path}}">Log in to bid or add items to your watchlist.</a>
         {% endif %}
     {% else %}
+    <!-- Listing is closed -->
         {% if last_bid is None %}
             Listing Closed Before Bid was placed
         {% else %}
             {% if user.is_authenticated and user == last_bid.bidder %}
                 You won the auction for {{listing.title}} at ${{last_bid.amount}}
             {% else %}
-                {{last_bid.bidder.profile.first_name}} {{last_bid.bidder.profile.last_name}} won the auction for {{listing.title}} at ${{last_bid.amount}}
+                <a href={% url 'profile' username=last_bid.bidder.username %} >{{last_bid.bidder.profile.first_name}} {{last_bid.bidder.profile.last_name}}</a> won the auction for {{listing.title}} at ${{last_bid.amount}}
             {% endif %}
-            
         {% endif %}
     {% endif %}
-    </form>
+<!-- Action Button To Add or Remove Items from Watchlist -->
+    {% if user != author %}
+        <form style="margin-top:10px;" action={% url 'listing' id=listing.id %} method="post">
+            {% csrf_token %}
+            {% if listing in user_watchlist %}
+                <input class="btn btn-warning" type="submit" value="Remove from Watchlist" name="button">
+            {% elif listing.is_open == True %}
+                <input class="btn btn-primary" type="submit" value="Add to Watchlist" name="button">
+            {% endif %}
+            
+        </form>
+    {% endif %}
+
 <!-- Bid History -->
 <p>
     <h5 style="margin-top: 40px">Bid History</h5>
-    <ul>
+    <ul class="list-group list-group-flush">
         {% for bid in bids reversed %}
-            <li>{{bid.bidder.profile.first_name}} {{bid.bidder.profile.first_name}} bid {{bid.amount}} on {{bid.date_bid}}</li>
+            <li class="list-group-item"><a href={% url 'profile' username=bid.bidder.username %} ><b>{{bid.bidder.profile.first_name}} {{bid.bidder.profile.last_name}}</b></a> bid ${{bid.amount}} on {{bid.date_bid}}</li>
         {% endfor %}
     </ul>
 </p>
 <!-- Comments -->
+<p>
+    <h5 style="margin-top: 40px">Comments</h5>
+    {% if listing.is_open %}
+        {% if user.is_authenticated %}
+            <form action={%url 'listing' id=listing.id %} method="post">
+                {% csrf_token %}
+                {{comment_form.as_p}}
+                <input class="btn btn-primary" type="submit" value="Submit Comment" name="button">
+            </form>
+        {% else %}
+        <a class="nav-link" href="/login?next={{request.path}}">Log in to leave comments.</a>
+        {% endif %}
+    {% endif %}
+    <ul class="list-group list-group-flush">
+        {% for comment in comments reversed %}
+            <li class="list-group-item">
+                {{comment.content}}
+                <div><b><a href={% url 'profile' username=comment.author.username %} >{{comment.author.profile.first_name}} {{comment.author.profile.last_name}}</b></a> on {{comment.date_posted}} </div>
+            </li>
+        {% endfor %}
+    </ul>
+    
+</p>
     
 {% endblock %}
