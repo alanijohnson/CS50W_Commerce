@@ -109,7 +109,8 @@ def register(request):
         
         else:
                 return render(request, "auctions/register.html", {
-                "message": "Failed to create Account."
+                "message": "Failed to create Account.",
+                "profile_form": profile_form
             })
         
         # validate standard user credentials
@@ -121,7 +122,8 @@ def register(request):
         confirmation = request.POST["confirmation"]
         if password != confirmation:
             return render(request, "auctions/register.html", {
-                "message": "Passwords must match."
+                "message": "Passwords must match.",
+                "profile_form": profile_form
             })
         
         # Attempt to create new user
@@ -132,13 +134,14 @@ def register(request):
             profile.save()
         except IntegrityError:
             return render(request, "auctions/register.html", {
-                "message": "Username already taken."
+                "message": "Username already taken.",
+                "profile_form": profile_form
             })
         
         login(request, user)
         return HttpResponseRedirect(reverse("index"))
     else:
-        profile_form = UserProfileForm
+        profile_form = UserProfileForm()
         return render(request, "auctions/register.html",{
             "profile_form": profile_form
         })
