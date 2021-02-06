@@ -7,25 +7,53 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import is_safe_url
 from .forms import UserProfileForm, CreateListingForm, CreateBidForm, CreateCommentForm
-from .models import User, Listing, Bid, Comment
+from .models import User, Listing, Bid, Comment, Category
 
-
+# index of webpage. offers searching by name, description and category.
 def index(request):
+    # get all of the listings that are open and sort by date posted descending
     active_listings = Listing.objects.filter(is_open=True).order_by('-date_posted')
+    
+    # initialize category and search
+    category = None
+    search = None
+    
+    # search fields used
+    if request.method == "POST":
+        # store search field data
+        search = request.POST.get("search")
+        category = request.POST.get("category")
+        
+        # text string search (not case sensitive)
+        if search is not None or search !='':
+            active_listings = list(filter(lambda listing: ((search.lower() in listing.title.lower()) or (search.lower() in listing.description.lower())),active_listings))
+        
+        # category search
+        if category != "":
+            active_listings = list(filter(lambda listing: (listing.category.name == category),active_listings))
+    
+    # create a dictionary of important meta data for the listing (number of bids, and the price to beat)
     active_listings_dict = {listing: (len(listing.bids.all()),listing.highest_bid()) for listing in active_listings}
+    
+    # pass category and search to initialize values of search fields if they were used.
     return render(request, "auctions/index.html",{
-        "active_listings": active_listings_dict
-    })
+        "active_listings": active_listings_dict,
+        "categories": Category.objects.all(),
+        "category": category,
+        "s": search
+        })
 
-
+# login page. Supports next redirecting and validates URL
 def login_view(request):
-    print(f"{request.path}")
+    
+    # determine if there is a next url parameter and validate
     next_url = request.GET.get('next')
-    print(f"{next_url}")
     if not valid_next_url(next_url, request.get_host()):
         next_url = "/"
     
+    # log in attempted
     if request.method == "POST":
+        # get the next url from the post dictionary and validate
         next_url = request.POST.get("next")
         print(f"{next_url}")
         if not valid_next_url(next_url, request.get_host()):
@@ -46,6 +74,7 @@ def login_view(request):
                 "message": "Invalid username and/or password."
             })
     else:
+        # pass the next_url to the form, so it can be used on form submission
         return render(request, "auctions/login.html", {
             "next_url":next_url
                       })
@@ -60,6 +89,7 @@ def valid_next_url(next, allowed_hosts):
         url=next, allowed_hosts=allowed_hosts
     )
 
+# log out page. Also supports redirecting. If the link isn't valid, return to index.
 def logout_view(request):
     next_url = request.GET.get('next')
     if not valid_next_url(next_url, request.get_host()):
@@ -67,10 +97,12 @@ def logout_view(request):
     logout(request)
     return redirect(next_url)
 
-
+# User Registration page. User creates a user account and a user profile using one form.
+# User accounts shouldn't be frequently modified. Profiles contain all modifiable components
 def register(request):
     if request.method == "POST":
         
+        # when the form is subitted validate the user profile form
         profile_form = UserProfileForm(request.POST)
         if profile_form.is_valid():
             profile = profile_form.save(commit=False)
@@ -80,6 +112,7 @@ def register(request):
                 "message": "Failed to create Account."
             })
         
+        # validate standard user credentials
         username = request.POST["username"]
         email = request.POST["email"]
 
@@ -110,13 +143,16 @@ def register(request):
             "profile_form": profile_form
         })
         
+
+# Create a listing. This entire view requires the user to be logged in, so a login redirect is used.
+# Once the listing is created, the user is redirected to the listing page
 @login_required(login_url='login')
 def create_listing(request):
     if request.method == "POST":
         form = CreateListingForm(request.POST)
                
         if form.is_valid():
-            # get the user
+            
             title = form.cleaned_data["title"]
             description = form.cleaned_data["description"]
             min_bid = form.cleaned_data["min_bid"]
@@ -136,7 +172,8 @@ def create_listing(request):
             'form': CreateListingForm()
         })
         
-
+# Individual listing page
+# Listing is very dynamic depending on who is viewing the page
 def listing(request, id):
     listing = Listing.objects.get(id=id)
     # form posted from listing page
@@ -145,6 +182,7 @@ def listing(request, id):
         button = request.POST.get("button")
         bid_form = CreateBidForm(request.POST)
         comment_form = CreateCommentForm(request.POST)
+        
         if button == "Bid":
             if bid_form.is_valid():
                 amount = bid_form.cleaned_data.get('amount')
@@ -181,17 +219,18 @@ def listing(request, id):
         # return if button was clicked but no forms were valid
         return render_listing(request, id, bid_form, comment_form)
     
+    # only create comment form if the listing is open. Otherwise users cannot comment on a post.
     comment_form = None
     if listing.is_open == True:
         comment_form = CreateCommentForm(initial={'listing':listing, 'author':request.user})
     return render_listing(request, id, CreateBidForm(initial={'listing':listing, 'bidder':request.user}), comment_form)
     
     
-
+# helper method to render the listing since the render is used in multiple places within the listing view.
 def render_listing(request, id, bid_form, comment_form):
     listing = Listing.objects.get(id=id)
     bids = listing.bids.all()
-    highest_bid = listing.highest_bid()
+    highest_bid = listing.highest_bid() # can be None
     user_watchlist = None
     if request.user.is_authenticated:
             user_watchlist = request.user.profile.watchlist.all()
@@ -209,22 +248,25 @@ def render_listing(request, id, bid_form, comment_form):
         "user_watchlist":user_watchlist
     })
 
+# Users profile. Can be used and accessed by all users even unauthenticated
+# If a users page is accessed and doesn't exist user is redirected to home page
+# If the user is on their own page, the user will see their watchlist.
+# Otherwise, just the Active and Closed listings show.
 def profile(request, username):
     try:
         user = User.objects.get(username=username)
     except:
         return redirect('index')
-        
+    
+    # create dictionaries of listings necessary for the html rendering
     watchlist = user.profile.watchlist.all()
     watchlist_dict = {listing: (len(listing.bids.all()), listing.highest_bid()) for listing in watchlist}
+    
     active_listings = Listing.objects.filter(author=user.id, is_open=True).order_by('-date_posted')
     active_listings_dict = {listing: (len(listing.bids.all()),listing.highest_bid) for listing in active_listings}
+   
     closed_listings = Listing.objects.filter(author=user.id, is_open=False).order_by('-date_posted')
     closed_listings_dict = {listing: listing.highest_bid() for listing in closed_listings}
-    
-    print(f"{watchlist_dict}")
-    print(f"{listing in watchlist}")
-    
     
     return render(request, "auctions/profile.html",{
         "current_user": request.user,

@@ -4,6 +4,7 @@
     <ul class="list-group list-group-flush">
         {% for listing, data in active_listings.items %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
+            
                 <span> <div> <a href={% url 'listing' id=listing.id %} ><strong>{{listing.title}}</strong></a></div>
                     <div>{{listing.description}}</div>
                     Posted by <a href={% url 'profile' username=listing.author.username %} >{{listing.author.profile.first_name}} {{listing.author.profile.last_name}}</a> on {{listing.date_posted}}</span>

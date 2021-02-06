@@ -1,7 +1,5 @@
 from django.contrib.auth.base_user import BaseUserManager
 
-
-
 # manager for the Custom User class
 class UserManager(BaseUserManager):
     # Custum user model manager where additional fields are supplied.

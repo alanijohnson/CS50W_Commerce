@@ -1,5 +1,29 @@
 {% extends "auctions/layout.html" %}
 
 {% block body %}
+    
+    <form action="" method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <div class="form-row">
+            <div class="col">
+                <input class="form-control" type=text placeholder="search" name="search" {%if s %}value={{s}}{% endif %}>
+            </div>
+            
+            <div class="col">
+                <select class="form-control" name="category">
+                      <option value="">Filter by Category</option>
+                      {% for c in categories %}
+                        <option {% if c.name == category %}selected="selected"{% endif %}>{{c.name}}</option>
+                      {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col">
+                <input class="form-control btn-primary" type="submit" value="search">
+            </div>
+        </div>
+        </div>
+    </form>
     {% include "./listings.html" %}
 {% endblock %}
