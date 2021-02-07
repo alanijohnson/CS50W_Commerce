@@ -128,10 +128,11 @@ def register(request):
         
         # Attempt to create new user
         try:
-            user = User.objects.create_user(username, email, password)
+            user = User.objects.create_user(username=username, email=email, password=password)
             user.save()
             profile.user = user
             profile.save()
+            
         except IntegrityError:
             return render(request, "auctions/register.html", {
                 "message": "Username already taken.",
