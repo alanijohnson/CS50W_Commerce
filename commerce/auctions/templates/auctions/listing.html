@@ -7,7 +7,7 @@
 {% block body %}
 <!-- Title and Author -->
     <h1> {{title}} </h1>
-    <b>Author:</b> {{listing.author.profile.first_name}} {{listing.author.profile.last_name}}
+    <b>Author:</b> <a href={% url 'profile' username=listing.author.username %} >{{listing.author.profile.first_name}} {{listing.author.profile.last_name}}</a>
     <div></div>
 <!-- Descriptions -->
     <h5 style="margin-top: 40px">Description</h5>
@@ -19,7 +19,7 @@
     <h5> Highest Bid </h5>
     <div>
     {% if last_bid and listing.is_open %}
-        {{last_bid.bidder.profile.first_name}} {{last_bid.bidder.profile.last_name}}: ${{last_bid.amount}}
+        <a href={% url 'profile' username=last_bid.bidder.username %} >{{last_bid.bidder.profile.first_name}} {{last_bid.bidder.profile.last_name}}</a>: ${{last_bid.amount}}
     {% elif listing.is_open %}
         <div>Be the first to bid!</div>
         <div>Minimum Amount: ${{listing.min_bid}}</div>

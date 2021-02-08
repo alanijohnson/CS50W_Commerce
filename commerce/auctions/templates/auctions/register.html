@@ -10,6 +10,7 @@
 
     <form action="{% url 'register' %}" method="post">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next_url }}" />
         <div class="form-group">
             <input class="form-control" autofocus type="text" name="username" placeholder="Username">
         </div>
@@ -26,6 +27,6 @@
         <input class="btn btn-primary" type="submit" value="Register">
     </form>
 
-    Already have an account? <a href="{% url 'login' %}">Log In here.</a>
+    Already have an account? <a href="{% url 'login' %}?next={{next_url}}">Log In here.</a>
 
 {% endblock %}

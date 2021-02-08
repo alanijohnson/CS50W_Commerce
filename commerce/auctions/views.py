@@ -71,7 +71,8 @@ def login_view(request):
             return redirect(next_url)
         else:
             return render(request, "auctions/login.html", {
-                "message": "Invalid username and/or password."
+                "message": "Invalid username and/or password.",
+                "next_url":next_url
             })
     else:
         # pass the next_url to the form, so it can be used on form submission
@@ -100,8 +101,17 @@ def logout_view(request):
 # User Registration page. User creates a user account and a user profile using one form.
 # User accounts shouldn't be frequently modified. Profiles contain all modifiable components
 def register(request):
+    
+    # determine if there is a next url parameter and validate
+    next_url = request.GET.get('next')
+    if not valid_next_url(next_url, request.get_host()):
+        next_url = "/"
     if request.method == "POST":
-        
+        # get the next url from the post dictionary and validate
+        next_url = request.POST.get("next")
+        print(f"{next_url}")
+        if not valid_next_url(next_url, request.get_host()):
+            next_url = "/"
         # when the form is subitted validate the user profile form
         profile_form = UserProfileForm(request.POST)
         if profile_form.is_valid():
@@ -110,7 +120,8 @@ def register(request):
         else:
                 return render(request, "auctions/register.html", {
                 "message": "Failed to create Account.",
-                "profile_form": profile_form
+                "profile_form": profile_form,
+                "next_url": next_url
             })
         
         # validate standard user credentials
@@ -123,7 +134,8 @@ def register(request):
         if password != confirmation:
             return render(request, "auctions/register.html", {
                 "message": "Passwords must match.",
-                "profile_form": profile_form
+                "profile_form": profile_form,
+                "next_url": next_url
             })
         
         # Attempt to create new user
@@ -136,15 +148,17 @@ def register(request):
         except IntegrityError:
             return render(request, "auctions/register.html", {
                 "message": "Username already taken.",
-                "profile_form": profile_form
+                "profile_form": profile_form,
+                "next_url":next_url
             })
         
         login(request, user)
-        return HttpResponseRedirect(reverse("index"))
+        return redirect(next_url)
     else:
         profile_form = UserProfileForm()
         return render(request, "auctions/register.html",{
-            "profile_form": profile_form
+            "profile_form": profile_form,
+            "next_url":next_url
         })
         
 
